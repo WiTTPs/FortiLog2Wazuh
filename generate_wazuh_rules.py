@@ -1,6 +1,7 @@
 import json
 import sys
 from pathlib import Path
+import re
 
 # ---------- Parameters ----------
 # Usage: python generate_wazuh_rules.py input.json output.xml
@@ -53,7 +54,10 @@ rules_xml.append(f'''    <rule id="{header_rule_id}" level="4">
 rule_id = header_rule_id + 1
 
 for entry in data.get('entries', []):
-    logid = xml_escape(entry.get("Message ID") or "")
+    # Get Message ID, pad to 6 characters, make regex safe, and escape XML
+    raw_logid = entry.get("Message ID") or ""
+    logid = xml_escape(re.escape(raw_logid.zfill(6)))
+
     description = xml_escape(entry.get("Message Meaning") or "No description")
     
     # Normalize severity and map to Wazuh level
@@ -71,10 +75,12 @@ for entry in data.get('entries', []):
         group_parts.append(f"fortios.severity.{severity}")
     group = ",".join(group_parts)
     
-    # Build the rule XML
+    # Build the rule XML with <if_sid> pointing to header
     rule = f'''    <rule id="{rule_id}" level="{level}">
+        <decoded_as>fortinet-fortigate-firewall</decoded_as>
+        <if_sid>{header_rule_id}</if_sid>
         <!-- {logid} -->
-        <field name="logid">{logid}$</field>
+        <field name="message_id">{logid}</field>
         <description>{description}</description>
         <group>{group}</group>
     </rule>'''
