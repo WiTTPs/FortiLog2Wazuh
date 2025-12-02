@@ -52,6 +52,9 @@ Example output:
         <group>fortios.event.anomaly,fortios.category.anomaly,fortios.severity.alert</group>
     </rule>
 ```
+
+copy the file to /var/ossec/etc/rules
+
 ## Custom decoder
 
 Next step is to build a custom decoder. alextibor already has a good decoder which I used as a base.
@@ -93,5 +96,25 @@ last 6 digits:
 ...
 ```
 
+copy the file to /var/ossec/etc/decoders
 
+Test with sample syslog entry and
+```
+/var/ossec/bin/wazuh-logtest
+```
 
+To reduce to log volume you can also mute certain rules by adjusting the rules and setting the level to 0.
+Use with caution though, as you might miss valuable traffic info.
+Example:
+Mute Forward traffic Message ID 13 - LOG_ID_TRAFFIC_END_FORWARD
+ ```
+ <rule id="110000" level="0">
+        <!-- CUSTOM RULE 13 -->
+        <if_sid>100010</if_sid>
+        <field name="logid">0000000013$</field>
+        <description>LOG_ID_TRAFFIC_END_FORWARD</description>
+        <group>fortios.event.unknown-ce,fortios.category.unknown-ce,fortios.severity.warning</group>
+    </rule>
+```
+
+You could also filter on dstintf or srcintf if needed with the same method.
